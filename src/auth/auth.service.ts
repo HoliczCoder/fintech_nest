@@ -14,7 +14,7 @@ export class AuthService {
 			const { password: hash } = customer;
 			const result = await compare(password.toString(), hash.toString());
 			if (result) {
-				return result;
+				return customer;
 			}
 			return null;
 		}
