@@ -6,7 +6,7 @@ export class CustomerService {
 	constructor(private prisma: PrismaService) {}
 
 	async findCustomer(customerWhereUniqueInput: Prisma.CustomerWhereUniqueInput): Promise<Customer | null> {
-		return this.prisma.customer.findUnique({
+		return await this.prisma.customer.findUnique({
 			where: customerWhereUniqueInput
 		});
 	}
