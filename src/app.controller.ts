@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { log } from 'console';
 import { LocalAuthGuard } from './auth/local-auth.guard';
 import { AuthService } from './auth/auth.service';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
 @Controller()
 export class AppController {
@@ -20,5 +21,11 @@ export class AppController {
 	async login(@Req() request: Request) {
 		console.log(request.user);
 		return this.authService.login(request.user);
+	}
+
+	@UseGuards(JwtAuthGuard)
+	@Get('profile')
+	getProfile(@Req() request: Request) {
+		return request.user;
 	}
 }
