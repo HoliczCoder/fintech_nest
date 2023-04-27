@@ -27,4 +27,12 @@ export class CustomerService {
 			}
 		});
 	}
+
+	async findCustomerByID(id: number) {
+		return await this.prisma.customer.findUnique({
+			where: {
+				customer_id: id
+			}
+		});
+	}
 }
