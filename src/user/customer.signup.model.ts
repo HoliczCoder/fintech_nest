@@ -9,9 +9,9 @@ export class CustomerSignup {
 	@IsString()
 	@MinLength(5)
 	@MaxLength(50)
-	@Matches(/^(?=.*\d).{5,20}$/, {
-		message: 'password too weak'
-	})
+	// @Matches(/^(?=.*\d).{5,20}$/, {
+	// 	message: 'password too weak'
+	// })
 	password: string;
 
 	@IsString()
