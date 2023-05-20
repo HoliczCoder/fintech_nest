@@ -1,15 +1,16 @@
-import { Controller, Get, Param, Post, Body, Put, Delete, Req, Res, HttpStatus } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Controller, Get, Post, Req } from '@nestjs/common';
+import { Request } from 'express';
 
 import { CustomerService } from './customer.service';
 
-@Controller()
+@Controller('/customer')
 export class CustomerController {
 	constructor(private readonly customerService: CustomerService) {}
 
-	@Get()
-	createCustomer(@Req() req: Request, @Res() res: Response) {
+	@Post()
+	async createCustomer(@Req() req: Request) {
 		const { body } = req;
 		const { email, full_name, password } = body;
+		return await this.customerService.createCustomer(email, full_name, password);
 	}
 }
