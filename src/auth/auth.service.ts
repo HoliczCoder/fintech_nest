@@ -21,6 +21,22 @@ export class AuthService {
 		return null;
 	}
 
+	// testing role base
+	async validateUser(email: string, password: string): Promise<any> {
+		const user = await this.customerService.findUser({
+			email: email
+		});
+		if (user) {
+			const { password: hash } = user;
+			const result = await compare(password.toString(), hash.toString());
+			if (result) {
+				return user;
+			}
+			return null;
+		}
+		return null;
+	}
+
 	async login(user: any) {
 		const payload = { customerName: user.full_name, uuid: user.uuid };
 		return {

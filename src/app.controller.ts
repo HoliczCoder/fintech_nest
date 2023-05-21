@@ -28,13 +28,15 @@ export class AppController {
 	// 	return this.authService.login(request.user);
 	// }
 
+	// tesing role base
 	@UseGuards(LocalAuthGuard)
 	@Post('auth/login')
 	async createSessionAfterLogin(@Req() request: Request | any, @Session() session: CustomSessionData) {
 		session.user = {
 			userId: request.user.email,
 			username: request.user.full_name,
-			roles: request.user.uuid
+			uuid: request.user.uuid,
+			role: request.user.role
 		};
 		return {
 			status: HttpStatus.OK
