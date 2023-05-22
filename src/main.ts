@@ -8,6 +8,6 @@ async function bootstrap() {
 	app.setGlobalPrefix('/api/v1');
 	const prismaService = app.get(PrismaService);
 	await prismaService.enableShutdownHooks(app);
-	await app.listen(3000);
+	await app.listen(5000);
 }
 bootstrap();
