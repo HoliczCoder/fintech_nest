@@ -3,6 +3,18 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import cookieParser = require('cookie-parser');
 import session = require('express-session');
+import * as mysqlSession from 'express-mysql-session';
+const MySQLStore = mysqlSession(session);
+
+const options = {
+	host: 'localhost',
+	port: 3306,
+	user: 'root',
+	password: '123456',
+	database: 'ecommerce'
+};
+
+const sessionStore = new MySQLStore(options);
 
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
@@ -14,7 +26,8 @@ async function bootstrap() {
 			secret: 'minh123',
 			cookie: {
 				secure: false
-			}
+			},
+			store: sessionStore
 		})
 	);
 	app.enableCors();
