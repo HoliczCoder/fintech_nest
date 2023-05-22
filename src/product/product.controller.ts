@@ -1,11 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, SetMetadata, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, SetMetadata, UseGuards, Put } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { SessionGuard } from 'src/auth/guard/session.guard';
+import { RoleGuard } from 'src/auth/guard/role.guard';
+import { Roles } from 'src/common/roles.decorator';
+import { ROLE } from 'src/common/roleBase';
 
 @Controller('product')
-@UseGuards(SessionGuard)
+@UseGuards(SessionGuard, RoleGuard)
 @SetMetadata('isPublic', true)
 export class ProductController {
 	constructor(private readonly productService: ProductService) {}
@@ -28,7 +31,16 @@ export class ProductController {
 
 	@Patch(':id')
 	@SetMetadata('isPublic', false)
+	@Roles(ROLE.ADMIN, ROLE.USER)
 	update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+		return this.productService.update(+id, updateProductDto);
+	}
+
+	@Put(':id')
+	@Roles(ROLE.ADMIN)
+	@SetMetadata('isPublic', false)
+	@Roles(ROLE.ADMIN, ROLE.USER)
+	adminUpdate(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
 		return this.productService.update(+id, updateProductDto);
 	}
 
