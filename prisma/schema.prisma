@@ -1,32 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model Customer {
   customer_id      Int              @id @default(autoincrement())
-  uuid             String           @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid             String           @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   status           Int              @default(1)
-  customer_group   CustomerGroup?   @relation(fields: [group_id], references: [customer_group_id])
   group_id         Int?
   email            String           @unique
   password         String
   full_name        String?
   created_at       DateTime         @default(now())
   updated_at       DateTime         @default(now()) @updatedAt
+  customer_group   CustomerGroup?   @relation(fields: [group_id], references: [customer_group_id])
   customer_address CustomerAddress?
   Order            Order[]
 
+  @@index([group_id], map: "customer_group_id_fkey")
   @@map("customer")
+}
+
+model User {
+  user_id    Int      @id @default(autoincrement())
+  uuid       String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  email      String   @unique
+  password   String
+  full_name  String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @updatedAt
+  role       String
+
+  @@map("user")
 }
 
 model AdminUser {
   admin_user_id Int      @id @default(autoincrement())
-  uuid          String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid          String   @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   status        Int
   email         String
   password      String
@@ -39,8 +53,7 @@ model AdminUser {
 
 model CustomerAddress {
   customer_address_id Int      @id @default(autoincrement())
-  uuid                String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  customer            Customer @relation(fields: [customer_id], references: [customer_id])
+  uuid                String   @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   customer_id         Int      @unique
   full_name           String?
   telephone           String?
@@ -53,14 +66,15 @@ model CustomerAddress {
   created_at          DateTime @default(now())
   updated_at          DateTime @default(now()) @updatedAt
   is_default          Int?
+  customer            Customer @relation(fields: [customer_id], references: [customer_id])
 
-  @@index([customer_id], name: "FK_CUSTOMER_ADDRESS_LINK")
+  @@index([customer_id], map: "FK_CUSTOMER_ADDRESS_LINK")
   @@map("customer_address")
 }
 
 model CustomerGroup {
   customer_group_id Int        @id @unique
-  uuid              String     @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid              String     @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   group_name        String
   created_at        DateTime   @default(now())
   updated_at        DateTime   @default(now()) @updatedAt
@@ -84,13 +98,9 @@ model UserTokenSecret {
 
 model Product {
   product_id                 Int                          @id @default(autoincrement())
-  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  // a VariantGroup is a must for product, VariantGroup contain many child prodcucts   
-  variant_group              VariantGroup?                @relation(fields: [variant_group_id], references: [variant_group_id])
+  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   variant_group_id           Int?
   visibility                 Int                          @default(1)
-  //  why do we need attribute_group here, we can retrieve AtrributeGroup through VariantGroup? // read my old comment I find dumb
-  attribute_group            AtrributeGroup?              @relation(fields: [group_id], references: [attribute_group_id])
   group_id                   Int?
   image                      String?
   sku                        String                       @unique
@@ -103,20 +113,21 @@ model Product {
   status                     Int
   created_at                 DateTime                     @default(now())
   updated_at                 DateTime                     @default(now()) @updatedAt
-  ProductAttributeValueIndex ProductAttributeValueIndex[]
-  ProductDescription         ProductDescription?
-  // link between product and cateogry
-  ProductCateogory           ProductCateogory[]
-  // one product belong to many cart item
   CartItem                   CartItem[]
   OrderItem                  OrderItem[]
+  attribute_group            AtrributeGroup?              @relation(fields: [group_id], references: [attribute_group_id])
+  variant_group              VariantGroup?                @relation(fields: [variant_group_id], references: [variant_group_id])
+  ProductAttributeValueIndex ProductAttributeValueIndex[]
+  ProductCateogory           ProductCateogory[]
+  ProductDescription         ProductDescription?
 
+  @@index([group_id], map: "product_group_id_fkey")
+  @@index([variant_group_id], map: "product_variant_group_id_fkey")
   @@map("product")
 }
 
 model ProductDescription {
   product_description_id         Int     @id @default(autoincrement())
-  product                        Product @relation(fields: [product_description_product_id], references: [product_id])
   product_description_product_id Int     @unique
   name                           String
   description                    String?
@@ -125,18 +136,15 @@ model ProductDescription {
   meta_title                     String?
   meta_description               String?
   meta_keywords                  String?
+  product                        Product @relation(fields: [product_description_product_id], references: [product_id])
 
   @@map("product_description")
 }
 
 model VariantGroup {
   variant_group_id   Int            @id @default(autoincrement())
-  uuid               String         @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  // a VariantGroup hav a AtrributeGroup of a product inside this variant
-  attribute_group    AtrributeGroup @relation(fields: [attribute_group_id], references: [attribute_group_id])
+  uuid               String         @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   attribute_group_id Int
-  // dont understand what Atrribute here to do what?
-  attribute          Atrribute?     @relation(fields: [attribute_one], references: [attribute_id])
   attribute_one      Int?
   attribute_two      Int?
   attribute_three    Int?
@@ -144,27 +152,30 @@ model VariantGroup {
   attribute_five     Int?
   visibility         Int            @default(0)
   Product            Product[]
+  attribute_group    AtrributeGroup @relation(fields: [attribute_group_id], references: [attribute_group_id])
+  attribute          Atrribute?     @relation(fields: [attribute_one], references: [attribute_id])
 
+  @@index([attribute_group_id], map: "variant_group_attribute_group_id_fkey")
+  @@index([attribute_one], map: "variant_group_attribute_one_fkey")
   @@map("variant_group")
 }
 
 model AtrributeGroup {
   attribute_group_id Int                  @id @default(autoincrement())
-  uuid               String               @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid               String               @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   group_name         String
   created_at         DateTime             @default(now())
   updated_at         DateTime             @default(now()) @updatedAt
-  Product            Product[]
-  // one to many, a AtrributeGroup inside many VariantGroup
-  VariantGroup       VariantGroup[]
   AttributeGroupLink AttributeGroupLink[]
+  Product            Product[]
+  VariantGroup       VariantGroup[]
 
   @@map("attribute_group")
 }
 
 model Atrribute {
   attribute_id               Int                          @id @default(autoincrement())
-  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   attribute_code             String                       @unique
   attribute_name             String
   type                       String
@@ -172,35 +183,33 @@ model Atrribute {
   display_on_frontend        Int                          @default(0)
   sort_order                 Int                          @default(0)
   is_filterable              Int                          @default(0)
-  // one to many in VariantGroup, dont understand why?
-  VariantGroup               VariantGroup[]
-  // many to many with attribute and attribute_group
   AttributeGroupLink         AttributeGroupLink[]
-  ProductAttributeValueIndex ProductAttributeValueIndex[]
   AttributeOption            AttributeOption[]
+  ProductAttributeValueIndex ProductAttributeValueIndex[]
+  VariantGroup               VariantGroup[]
 
   @@map("attribute")
 }
 
 model AttributeGroupLink {
-  // many to many with attribute and attribute_group
   attribute_group_link_id Int            @id @default(autoincrement())
-  attribute               Atrribute      @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: Cascade)
   attribute_id            Int
-  attribute_group         AtrributeGroup @relation(fields: [group_id], references: [attribute_group_id], onDelete: Cascade, onUpdate: Cascade)
   group_id                Int
+  attribute               Atrribute      @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
+  attribute_group         AtrributeGroup @relation(fields: [group_id], references: [attribute_group_id], onDelete: Cascade)
 
+  @@index([attribute_id], map: "attribute_group_link_attribute_id_fkey")
+  @@index([group_id], map: "attribute_group_link_group_id_fkey")
   @@map("attribute_group_link")
 }
 
 model AttributeOption {
   attribute_option_id        Int                          @id @default(autoincrement())
-  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  // many to one, one attribute can have to many options 
-  attribute                  Atrribute                    @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade, onUpdate: Cascade)
+  uuid                       String                       @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   attribute_id               Int
   attribute_code             String
   option_text                String
+  attribute                  Atrribute                    @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
   ProductAttributeValueIndex ProductAttributeValueIndex[]
 
   @@index([attribute_id])
@@ -209,50 +218,51 @@ model AttributeOption {
 
 model ProductAttributeValueIndex {
   product_attribute_value_index_id Int              @id @default(autoincrement())
-  uuid                             String           @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  // many to many between product and attribute
-  product                          Product          @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  uuid                             String           @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   product_id                       Int
-  attribute                        Atrribute        @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
   attribute_id                     Int
-  attribute_option                 AttributeOption? @relation(fields: [option_id], references: [attribute_option_id])
   option_id                        Int?
   option_text                      String?
+  attribute                        Atrribute        @relation(fields: [attribute_id], references: [attribute_id], onDelete: Cascade)
+  attribute_option                 AttributeOption? @relation(fields: [option_id], references: [attribute_option_id])
+  product                          Product          @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
 
   @@unique([product_id, attribute_id, option_id])
-  @@unique([product_id, attribute_id]) // a product can have only one attribute setting
+  @@unique([product_id, attribute_id])
+  @@index([attribute_id], map: "product_attribute_value_index_attribute_id_fkey")
+  @@index([option_id], map: "product_attribute_value_index_option_id_fkey")
   @@map("product_attribute_value_index")
 }
 
 model Category {
   category_id         Int                  @id @default(autoincrement())
-  uuid                String               @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid                String               @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   status              Int
   parent_id           Int?
   include_in_nav      Int
   position            Int?
   created_at          DateTime             @default(now())
   updated_at          DateTime             @default(now()) @updatedAt
-  ProductCateogory    ProductCateogory[]
   CategoryDescription CategoryDescription?
+  ProductCateogory    ProductCateogory[]
 
   @@map("category")
 }
 
 model ProductCateogory {
   product_category_id Int      @id @default(autoincrement())
-  Category            Category @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
   category_id         Int
-  Product             Product  @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
   product_id          Int
+  Category            Category @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  Product             Product  @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
 
   @@unique([category_id, product_id])
+  @@index([product_id], map: "product_cateogory_product_id_fkey")
   @@map("product_cateogory")
 }
 
 model CategoryDescription {
   category_description_id          Int      @id @default(autoincrement())
-  Category                         Category @relation(fields: [category_description_category_id], references: [category_id], onDelete: Cascade)
   category_description_category_id Int      @unique
   name                             String
   short_description                String?
@@ -262,16 +272,16 @@ model CategoryDescription {
   meta_keywords                    String?
   meta_description                 String?
   url_key                          String
+  Category                         Category @relation(fields: [category_description_category_id], references: [category_id], onDelete: Cascade)
 
   @@map("category_description")
 }
 
 model Cart {
   cart_id               Int        @id @default(autoincrement())
-  uuid                  String     @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid                  String     @unique @default(dbgenerated("(replace(uuid(),_utf8mb3\\'-\\',_utf8mb4\\'\\'))"))
   sid                   String?    @unique
   currency              String     @default("USD")
-  // guest user also have cart, so customer_id is no need
   customer_id           Int?       @unique
   customer_group_id     Int?
   customer_email        String?
@@ -279,15 +289,14 @@ model Cart {
   user_ip               String?
   status                Int        @default(0)
   coupon                Int?
-  shipping_fee_excl_tax Float?     @default(0.0000)
-  shipping_fee_incl_tax Float?     @default(0.0000)
-  discount_amount       Float?     @default(0.0000)
-  sub_total             Float      @default(0.0000)
+  shipping_fee_excl_tax Float?     @default(0)
+  shipping_fee_incl_tax Float?     @default(0)
+  discount_amount       Float?     @default(0)
+  sub_total             Float      @default(0)
   total_qty             Int        @default(0)
   total_weight          Float?
-  tax_amount            Float      @default(0.0000)
+  tax_amount            Float      @default(0)
   grand_total           Float?
-  // dont need to have shipping_methor yet
   shipping_method       String?
   shipping_method_name  String?
   shipping_address_id   Int?
@@ -295,9 +304,7 @@ model Cart {
   shipping_note         String?
   created_at            DateTime   @default(now())
   updated_at            DateTime   @default(now()) @updatedAt
-  // one cart have many cart items
   CartItem              CartItem[]
-  // one cart have one order
   Order                 Order?
 
   @@map("cart")
@@ -305,7 +312,7 @@ model Cart {
 
 model CartAddress {
   cart_address_id Int     @id @default(autoincrement())
-  uuid            String  @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid            String  @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   full_name       String?
   postcode        String?
   telephone       String?
@@ -320,10 +327,8 @@ model CartAddress {
 
 model CartItem {
   cart_item_id           Int      @id @default(autoincrement())
-  uuid                   String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  Cart                   Cart     @relation(fields: [cart_id], references: [cart_id], onDelete: Cascade, onUpdate: Cascade)
+  uuid                   String   @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   cart_id                Int
-  Product                Product  @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
   product_id             Int
   product_sku            String
   product_name           String
@@ -334,31 +339,30 @@ model CartItem {
   qty                    Int
   final_price            Float
   final_price_incl_tax   Float
-  tax_percent            Float    @default(0.0000)
-  tax_amount             Float    @default(0.0000)
-  discount_amount        Float    @default(0.0000)
+  tax_percent            Float    @default(0)
+  tax_amount             Float    @default(0)
+  discount_amount        Float    @default(0)
   total                  Float
   variant_group_id       Int?
   variant_options        String?
   product_custom_options String?
   created_at             DateTime @default(now())
   updated_at             DateTime @default(now()) @updatedAt
+  Cart                   Cart     @relation(fields: [cart_id], references: [cart_id], onDelete: Cascade)
+  Product                Product  @relation(fields: [product_id], references: [product_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([cart_id, product_id])
+  @@index([product_id], map: "cart_item_product_id_fkey")
   @@map("cart_item")
 }
 
 model Order {
   order_id              Int                 @id @default(autoincrement())
-  uuid                  String              @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid                  String              @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   sid                   String?
   order_number          String              @unique
-  // if cart is deleted, order not need to be deleted
-  Cart                  Cart                @relation(fields: [cart_id], references: [cart_id])
   cart_id               Int                 @unique
   currency              String
-  // dont understand why customer_id default set to null?
-  Customer              Customer            @relation(fields: [customer_id], references: [customer_id])
   customer_id           Int
   customer_email        String?
   customer_full_name    String?
@@ -384,32 +388,32 @@ model Order {
   payment_status        Int                 @default(0)
   created_at            DateTime            @default(now())
   updated_at            DateTime            @default(now()) @updatedAt
-  // one order match with one OrderActivity 
+  Cart                  Cart                @relation(fields: [cart_id], references: [cart_id])
+  Customer              Customer            @relation(fields: [customer_id], references: [customer_id])
   OrderActivity         OrderActivity?
-  // one order have many order item
   OrderItem             OrderItem[]
-  // one order belong to one shipment
-  Shipment              Shipment?
   PaymentTransaction    PaymentTransaction?
+  Shipment              Shipment?
 
+  @@index([customer_id], map: "order_customer_id_fkey")
   @@map("order")
 }
 
 model OrderActivity {
   order_activity_id       Int      @id @default(autoincrement())
-  Order                   Order    @relation(fields: [order_activity_id], references: [order_id], onDelete: Cascade)
   order_activity_order_id Int      @unique
   comment                 String
   customer_notified       Int
   created_at              DateTime @default(now())
   updated_at              DateTime @default(now()) @updatedAt
+  Order                   Order    @relation(fields: [order_activity_id], references: [order_id], onDelete: Cascade)
 
   @@map("order_activity")
 }
 
 model OrderAddress {
   order_address_id Int     @id @default(autoincrement())
-  uuid             String  @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
+  uuid             String  @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   full_name        String?
   postcode         String?
   telephone        String?
@@ -424,10 +428,8 @@ model OrderAddress {
 
 model OrderItem {
   order_item_id          Int     @id @default(autoincrement())
-  uuid                   String  @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  Order                  Order   @relation(fields: [order_item_order_id], references: [order_id])
+  uuid                   String  @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   order_item_order_id    Int
-  Product                Product @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
   product_id             Int
   referer                Int?
   product_sku            String
@@ -447,27 +449,30 @@ model OrderItem {
   variant_options        String?
   product_custom_options String?
   requested_data         String?
+  Order                  Order   @relation(fields: [order_item_order_id], references: [order_id])
+  Product                Product @relation(fields: [product_id], references: [product_id], onDelete: NoAction, onUpdate: NoAction)
 
+  @@index([order_item_order_id], map: "order_item_order_item_order_id_fkey")
+  @@index([product_id], map: "order_item_product_id_fkey")
   @@map("order_item")
 }
 
 model Shipment {
   shipment_id       Int      @id @default(autoincrement())
-  uuid              String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  Order             Order    @relation(fields: [shipment_order_id], references: [order_id], onDelete: Cascade)
+  uuid              String   @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   shipment_order_id Int      @unique
   carrier_name      String?
   tracking_number   String?
   created_at        DateTime @default(now())
   updated_at        DateTime @default(now()) @updatedAt
+  Order             Order    @relation(fields: [shipment_order_id], references: [order_id], onDelete: Cascade)
 
   @@map("shipment")
 }
 
 model PaymentTransaction {
   payment_transaction_id       Int      @id @default(autoincrement())
-  uuid                         String   @unique @default(dbgenerated("(replace(uuid(),'-',''))"))
-  Order                        Order    @relation(fields: [payment_transaction_order_id], references: [order_id], onDelete: Cascade, onUpdate: Cascade)
+  uuid                         String   @unique @default(dbgenerated("(replace(uuid(),_utf8mb4\\'-\\',_utf8mb4\\'\\'))"))
   payment_transaction_order_id Int      @unique
   transaction_id               String?  @unique
   transaction_type             String
@@ -477,6 +482,7 @@ model PaymentTransaction {
   additional_information       String?
   created_at                   DateTime @default(now())
   updated_at                   DateTime @default(now()) @updatedAt
+  Order                        Order    @relation(fields: [payment_transaction_order_id], references: [order_id], onDelete: Cascade)
 
   @@map("payment_transaction")
 }

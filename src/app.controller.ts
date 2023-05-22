@@ -1,9 +1,15 @@
-import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Req, UseGuards, Session, HttpStatus } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
-import { JwtAuthGuard } from './auth/guard/jwt-auth.guard';
 import { LocalAuthGuard } from './auth/guard/local-auth.guard';
+import { JwtAuthGuard } from './auth/guard/jwt-auth.guard';
+import { SessionData } from 'express-session';
+
+interface CustomSessionData extends SessionData {
+	user: any;
+}
 
 @Controller()
 export class AppController {
@@ -14,10 +20,26 @@ export class AppController {
 		return this.appService.getHello();
 	}
 
+	// @UseGuards(LocalAuthGuard)
+	// @Post('auth/login')
+	// async login(@Req() request: Request) {
+	// 	console.log(request.user);
+	// 	return this.authService.login(request.user);
+	// }
+
+	// tesing role base
 	@UseGuards(LocalAuthGuard)
 	@Post('auth/login')
-	async login(@Req() request: Request) {
-		return this.authService.login(request.user);
+	async createSessionAfterLogin(@Req() request: Request | any, @Session() session: CustomSessionData) {
+		session.user = {
+			userId: request.user.email,
+			username: request.user.full_name,
+			uuid: request.user.uuid,
+			role: request.user.role
+		};
+		return {
+			status: HttpStatus.OK
+		};
 	}
 
 	@UseGuards(JwtAuthGuard)

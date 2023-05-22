@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
 import { CustomerService } from 'src/user/customer.service';
-import { JwtService } from '@nestjs/jwt';
-
 @Injectable()
 export class AuthService {
 	constructor(private customerService: CustomerService, private jwtService: JwtService) {}
@@ -16,6 +15,22 @@ export class AuthService {
 			const result = await compare(password.toString(), hash.toString());
 			if (result) {
 				return customer;
+			}
+			return null;
+		}
+		return null;
+	}
+
+	// testing role base
+	async validateUser(email: string, password: string): Promise<any> {
+		const user = await this.customerService.findUser({
+			email: email
+		});
+		if (user) {
+			const { password: hash } = user;
+			const result = await compare(password.toString(), hash.toString());
+			if (result) {
+				return user;
 			}
 			return null;
 		}
